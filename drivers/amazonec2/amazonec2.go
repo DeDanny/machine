@@ -618,13 +618,24 @@ func (d *Driver) configureSecurityGroup(groupName string) error {
 		}
 
 		log.Debugf("authorizing swarm on port %d", port)
+		
+		hasPort := false
+		
+		for _, p := range securityGroup.IpPermissions {
+			switch p.FromPort {
+            case port:
+				hasPort = true
+			}
+		}
 
-		perms = append(perms, amz.IpPermission{
-			IpProtocol: "tcp",
-			FromPort:   port,
-			ToPort:     port,
-			IpRange:    ipRange,
-		})
+		if !hasPort {
+			perms = append(perms, amz.IpPermission{
+				IpProtocol: "tcp",
+				FromPort:   port,
+				ToPort:     port,
+				IpRange:    ipRange,
+			})
+		}
 	}
 
 	log.Debugf("configuring security group authorization for %s", ipRange)
