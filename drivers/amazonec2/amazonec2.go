@@ -441,7 +441,7 @@ func (d *Driver) GetDockerConfigDir() string {
 func (d *Driver) Upgrade() error {
 	log.Debugf("Upgrading Docker")
 
-	cmd, err := d.GetSSHCommand("sudo apt-get update && sudo apt-get install --upgrade lxc-docker")
+	cmd, err := d.GetSSHCommand("sudo apt-get update && sudo apt-get install --upgrade docker.io")
 	if err != nil {
 		return err
 
