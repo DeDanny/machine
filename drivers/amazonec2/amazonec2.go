@@ -33,33 +33,34 @@ const (
 )
 
 type Driver struct {
-	Id                string
-	AccessKey         string
-	SecretKey         string
-	SessionToken      string
-	Region            string
-	AMI               string
-	SSHKeyID          int
-	KeyName           string
-	InstanceId        string
-	InstanceType      string
-	IPAddress         string
-	PrivateIPAddress  string
-	MachineName       string
-	SecurityGroupId   string
-	SecurityGroupName string
-	ReservationId     string
-	RootSize          int64
-	VpcId             string
-	SubnetId          string
-	Zone              string
-	CaCertPath        string
-	PrivateKeyPath    string
-	SwarmMaster       bool
-	SwarmHost         string
-	SwarmDiscovery    string
-	storePath         string
-	keyPath           string
+	Id                				string
+	AccessKey         				string
+	SecretKey         				string
+	SessionToken      				string
+	Region            				string
+	AMI               				string
+	SSHKeyID          				int
+	KeyName           				string
+	InstanceId        				string
+	InstanceType      				string
+	IPAddress         				string
+	PrivateIPAddress  				string
+	MachineName       				string
+	SecurityGroupId   				string
+	SecurityGroupName 				string
+	ReservationId     				string
+	RootSize          				int64
+	VpcId             				string
+	SubnetId          				string
+	Zone              				string
+	CaCertPath        				string
+	PrivateKeyPath    				string
+	SwarmMaster       				bool
+	SwarmHost         				string
+	SwarmDiscovery    				string
+	storePath         				string
+	keyPath           				string
+	UseInstancePrivateIPAddress   	bool
 }
 
 type CreateFlags struct {
@@ -146,6 +147,11 @@ func GetCreateFlags() []cli.Flag {
 			Value:  defaultRootSize,
 			EnvVar: "AWS_ROOT_SIZE",
 		},
+		cli.BoolFlag{
+            Name:   "amazonec2-use-instance-private-ip-address",
+            Usage:  "Use AWS private IP Address instead of the public IP Address (default=false)"
+			EnvVar: "AWS_USE_PRIVATE_IP_ADDRESS",
+        },
 	}
 }
 
@@ -180,7 +186,9 @@ func (d *Driver) SetConfigFromFlags(flags drivers.DriverOptions) error {
 	d.SwarmMaster = flags.Bool("swarm-master")
 	d.SwarmHost = flags.String("swarm-host")
 	d.SwarmDiscovery = flags.String("swarm-discovery")
-
+	
+	d.UseInstancePrivateIPAddress = flags.Bool("amazonec2-use-instance-private-ip-address")
+	
 	if d.AccessKey == "" {
 		return fmt.Errorf("amazonec2 driver requires the --amazonec2-access-key option")
 	}
@@ -278,6 +286,10 @@ func (d *Driver) Create() error {
 
 	d.waitForInstance()
 
+	if d.UsePrivateIPAddress {
+		d.IPAddress = d.PrivateIPAddress
+    }
+	
 	log.Debugf("created instance ID %s, IP address %s, Private IP address %s",
 		d.InstanceId,
 		d.IPAddress,
@@ -332,6 +344,11 @@ func (d *Driver) GetIP() (string, error) {
 	if err != nil {
 		return "", err
 	}
+	
+	if d.UseInstancePrivateIPAddress {
+		return inst.PrivateIpAddress, nil
+	}
+
 
 	return inst.IpAddress, nil
 }
